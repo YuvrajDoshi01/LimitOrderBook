@@ -1,0 +1,22 @@
+# Prerequisites
+*.d
+*.o
+*.obj
+
+# CMake Build Artifacts (Very Important)
+build/
+cmake-build-debug/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Executables
+*.exe
+*.out
+LOB_Engine
+
+# IDE Settings (VS Code, CLion, Mac)
+.vscode/
+.idea/
+.DS_Store
