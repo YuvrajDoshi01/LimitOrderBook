@@ -57,7 +57,7 @@ namespace LOB {
             }
             // Step 2: Get the best opposing price level.
             // Call 'getBestLevel()' using the incomingOrder's side.
-            LimitLevel* bestLevel = getBestLevel(incomingOrder->side == Side::Buy ? Side::Sell : Side::Buy);
+            LimitLevel* bestLevel = getBestLevel(incomingOrder->side);
             // Step 3: Check if the book is empty.
             // If bestLevel is nullptr, we have no one to trade with. Break.
             if(bestLevel == nullptr){
