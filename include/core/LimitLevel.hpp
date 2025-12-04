@@ -10,8 +10,6 @@ namespace LOB {
         // --- Constructor ---
         explicit LimitLevel(Price price);
 
-        // --- Core Operations ---
-        
         // Appends an order to the end of the list (Time Priority)
         void append(Order* order);
 
