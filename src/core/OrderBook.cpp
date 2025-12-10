@@ -1,4 +1,5 @@
 #include "core/OrderBook.hpp"
+#include "core/MatchingEngine.hpp"
 #include "types/Order.hpp"
 #include <iostream> // For printing trades
 #define endl std::endl
@@ -32,8 +33,8 @@ namespace LOB {
         // Step 3: Match Immediately (Market Taker)
         // Call the 'match()' function passing this new order.
         // It returns the remaining quantity that wasn't filled.
-        Quantity remainingQty = match(order);
-        
+        // Quantity remainingQty = match(order);
+        Quantity remainingQty = MatchingEngine::match(order, *this);
         // Step 4: Update the Order
         // Update order->quantity with the remaining quantity.
         order->quantity = remainingQty;

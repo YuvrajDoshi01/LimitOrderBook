@@ -7,6 +7,7 @@
 namespace LOB {
 
     class OrderBook {
+    friend class MatchingEngine;
     public:
         // Constructor & Destructor
         OrderBook();

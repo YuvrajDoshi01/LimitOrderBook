@@ -1,19 +1,30 @@
 cmake_minimum_required(VERSION 3.10)
 project(LimitOrderBook VERSION 1.0)
 
-# Set C++ Standard to C++17 or C++20 (needed for modern features)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Include the header files
 include_directories(include)
 
-# Gather all source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+# 1. Define the Library Sources (The Logic)
+# NOTE: Only list .cpp files here. Header files (.hpp) are handled by include_directories.
+set(LIBRARY_SOURCES
+    src/core/OrderBook.cpp
+    src/core/LimitLevel.cpp
+    src/core/MatchingEngine.cpp
+    # Add src/types/Order.cpp here ONLY if you moved implementation out of the .hpp
+)
 
-# Create the Main Executable
-add_executable(LOB_Engine ${SOURCES})
+# 2. Build the Main Engine (Manual Test)
+# We combine the Runner (main.cpp) + The Logic (LIBRARY_SOURCES)
+add_executable(LOB
+    src/main.cpp 
+    ${LIBRARY_SOURCES}
+)
 
-# --- Setup for Testing (Optional for now) ---
-# enable_testing()
-# add_subdirectory(tests)
+# 3. Build the Benchmark (Speed Test)
+# We combine the Runner (LatencyBenchmark.cpp) + The Logic (LIBRARY_SOURCES)
+add_executable(LOB_Benchmark
+    benchmark/LatencyBenchmark.cpp 
+    ${LIBRARY_SOURCES}
+)
