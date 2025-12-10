@@ -18,11 +18,6 @@ namespace LOB {
         totalVolume += order->quantity;
 
         // 4. Linked List Logic:
-        // Case A: The list is empty (head is null).
-        //    - Set head = order
-        //    - Set tail = order
-        //    - Set order->next = nullptr
-        //    - Set order->prev = nullptr
         if(head == nullptr){
             head = order;
             tail = order;
