@@ -38,7 +38,8 @@ namespace LOB {
                 Quantity tradeQty = std::min(qty, bookOrder->quantity);
 
                 // --- EXECUTION (Log trade) ---
-                std::cout << "Trade Executed: " << tradeQty << " @ " << bestLevel->getPrice() << std::endl;
+                // PERFORMANCE NOTE: Comment this out when running benchmarks!
+                // std::cout << "Trade Executed: " << tradeQty << " @ " << bestLevel->getPrice() << std::endl;
 
                 // Update Quantities
                 qty -= tradeQty;
@@ -54,8 +55,8 @@ namespace LOB {
                     // Remove from HashMap
                     book.orderLookup.erase(bookOrder->id);
                     
-                    // Delete the Object (or deallocate to pool)
-                    delete bookOrder;
+                    // --- CHANGED: Return to Pool instead of Delete ---
+                    book.orderPool.deallocate(bookOrder);
                 }
 
                 bookOrder = nextOrder;
@@ -70,6 +71,7 @@ namespace LOB {
                     // We ate all the buyers at this price
                     book.bids.erase(bestLevel->getPrice());
                 }
+                // LimitLevels are not pooled in this version, so standard delete is correct
                 delete bestLevel;
             }
         }

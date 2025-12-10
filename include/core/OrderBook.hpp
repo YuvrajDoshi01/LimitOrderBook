@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/LimitLevel.hpp"
+#include "memory/ObjectPool.hpp"
 #include <map>
 #include <unordered_map>
 
@@ -28,7 +29,7 @@ namespace LOB {
 
     private:
         // --- Data Structures ---
-
+        OrderPool orderPool;
         // 1. The "Index" (Trees)
         // Bids: Sorted High to Low (std::greater) -> Highest Bid is Best
         std::map<Price, LimitLevel*, std::greater<Price>> bids;

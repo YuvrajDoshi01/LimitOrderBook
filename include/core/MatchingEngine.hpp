@@ -1,6 +1,6 @@
 #pragma once
-
 #include "types/Order.hpp"
+
 // We only forward declare OrderBook here to avoid circular includes in headers
 namespace LOB {
     class OrderBook; 

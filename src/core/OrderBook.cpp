@@ -5,9 +5,10 @@
 #define endl std::endl
 namespace LOB {
 
-    OrderBook::OrderBook() {
+    OrderBook::OrderBook(): orderPool(1000000) {
         // Constructor: Nothing complex to initialize here since 
         // std::map and std::unordered_map initialize themselves.
+        orderLookup.reserve(1500000);
     }
 
     OrderBook::~OrderBook() {
@@ -29,11 +30,11 @@ namespace LOB {
         // Step 2: Create the Order Object
         // Allocate a new Order object (using 'new' for now).
         // (Note: In the advanced version, we will ask the ObjectPool for this).
-        Order* order = new Order(id, side, price, quantity);
+        // Order* order = new Order(id, side, price, quantity);
+        Order* order = orderPool.allocate(id, side, price, quantity);
         // Step 3: Match Immediately (Market Taker)
         // Call the 'match()' function passing this new order.
         // It returns the remaining quantity that wasn't filled.
-        // Quantity remainingQty = match(order);
         Quantity remainingQty = MatchingEngine::match(order, *this);
         // Step 4: Update the Order
         // Update order->quantity with the remaining quantity.
@@ -43,7 +44,7 @@ namespace LOB {
             addRestingOrder(order);
         }
         else{
-            delete order;
+            orderPool.deallocate(order);
         }
     }
 
@@ -105,7 +106,7 @@ namespace LOB {
                 if(bookOrder->isFilled()){
                     bestLevel->remove(bookOrder);
                     orderLookup.erase(bookOrder->id);
-                    delete bookOrder;
+                    orderPool.deallocate(bookOrder);
                 }
                 bookOrder = nextOrder;
             }
@@ -197,7 +198,7 @@ namespace LOB {
         // Remove from 'orderLookup'.
         orderLookup.erase(id);
         // 'delete' the order object.
-        delete order;
+        orderPool.deallocate(order);
     }
 
     LimitLevel* OrderBook::getBestLevel(Side side) const {
