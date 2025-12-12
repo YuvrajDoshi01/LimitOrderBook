@@ -6,10 +6,10 @@
 
 namespace LOB {
 
-    OrderBook::OrderBook(): orderPool(1000000) {
+    OrderBook::OrderBook(): orderPool(10000000) {
         // Resize vector to hold 1 Million IDs initially.
         // We fill it with 'nullptr' to indicate empty slots.
-        orderLookup.resize(1000000, nullptr);
+        orderLookup.resize(10000000, nullptr);
     }
 
     OrderBook::~OrderBook() {
