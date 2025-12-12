@@ -90,7 +90,7 @@ make
 
 ---
 
-## 💻 Usage
+## Usage
 
 ### Running the Application
 After building, the main executable will be located in the `build` (or `build/bin`) directory.
@@ -125,5 +125,5 @@ The Order Book uses a **Price-Time Priority** matching algorithm:
 **Data Structures:**
 * **Bids (Buy Orders):** Stored in a max-heap or sorted map (descending order) to quickly access the highest buy price.
 * **Asks (Sell Orders):** Stored in a min-heap or sorted map (ascending order) to quickly access the lowest sell price.
-* **Order Map:** A hash map is often used to look up orders by ID O(1) for quick cancellations. [Will be implementing the Vector version soon to make the process cachable]
+* **Order Vector:** A vector is often used to look up orders by ID O(1) for quick cancellations. 
 

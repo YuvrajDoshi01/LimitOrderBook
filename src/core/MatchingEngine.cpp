@@ -52,8 +52,10 @@ namespace LOB {
                     // Remove from Linked List
                     bestLevel->remove(bookOrder);
                     
-                    // Remove from HashMap
-                    book.orderLookup.erase(bookOrder->id);
+                    
+                    if (bookOrder->id < book.orderLookup.size()) {
+                        book.orderLookup[bookOrder->id] = nullptr;
+                    }
                     
                     // --- CHANGED: Return to Pool instead of Delete ---
                     book.orderPool.deallocate(bookOrder);

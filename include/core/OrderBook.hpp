@@ -4,6 +4,7 @@
 #include "memory/ObjectPool.hpp"
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 namespace LOB {
 
@@ -40,7 +41,7 @@ namespace LOB {
         // 2. The "Lookup" (Hash Map)
         // Maps OrderID -> Order Pointer. 
         // Allows O(1) access to cancel orders.
-        std::unordered_map<OrderId, Order*> orderLookup;
+        std::vector<Order*> orderLookup;
 
         // --- Internal Helpers ---
         
