@@ -6,10 +6,9 @@
 
 namespace LOB {
 
-    OrderBook::OrderBook(): orderPool(10000000), levelPool(1024) {
-        // Resize vector to hold 1 Million IDs initially.
-        // We fill it with 'nullptr' to indicate empty slots.
-        orderLookup.resize(10000000, nullptr);
+    OrderBook::OrderBook(): orderPool(150000000), levelPool(1024) {
+        // Pre-allocate lookup vector for 120M orders with modest initial size.
+        orderLookup.reserve(120000000);
     }
 
     OrderBook::~OrderBook() {
@@ -40,19 +39,11 @@ namespace LOB {
         }
     }
 
-    // NOTE: You can DELETE this match() function from OrderBook.cpp entirely.
-    // You are now using MatchingEngine::match(), so this code is dead/duplicate.
-    // If you keep it, the compiler might complain or you might call the wrong one.
-    
-    /* Quantity OrderBook::match(Order* incomingOrder) { 
-        // DELETE THIS WHOLE FUNCTION 
-    }
-    */
-
     void OrderBook::addRestingOrder(Order* order) {
-        // 1. Dynamic Resizing (Safety Check)
+        // 1. Grow vector if needed (smart exponential growth to avoid thrashing)
         if (order->id >= orderLookup.size()) {
-            orderLookup.resize(order->id * 2, nullptr);
+            size_t newSize = std::max((size_t)(order->id + 1), orderLookup.size() * 2);
+            orderLookup.resize(newSize, nullptr);
         }
 
         // 2. Direct Assignment

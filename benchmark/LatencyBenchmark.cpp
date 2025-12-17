@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 
         // --- Save to CSV ---
         std::cout << "Saving raw data to 'latencies.csv'..." << std::endl;
-        std::ofstream outFile("latencies.csv");
+        std::ofstream outFile("build/latencies.csv");
         outFile << "Latency_NS\n"; // Header
         long long sum = 0;
         for (long long lat : latencies) {

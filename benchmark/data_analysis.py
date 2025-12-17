@@ -2,10 +2,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import os
 
-# Define file path (adjust if you run this from root or build folder)
-# If you run from root, file is likely in build/latencies.csv
+# Define file path (works from repo root or benchmark directory)
 FILE_PATH = 'build/latencies.csv'
+
+# If run from benchmark/ directory, adjust path
+if not os.path.exists(FILE_PATH) and os.path.exists('../build/latencies.csv'):
+    FILE_PATH = '../build/latencies.csv'
 
 def plot_latency_histogram(file_path):
     try:
@@ -46,8 +50,10 @@ def plot_latency_histogram(file_path):
         plt.grid(axis='y', alpha=0.5)
 
         # Save plot
-        plt.savefig('build/latency_histogram.png')
-        print("Chart saved as 'latency_histogram.png'")
+        output_dir = os.path.dirname(FILE_PATH) or '.'
+        plot_path = os.path.join(output_dir, 'latency_histogram.png')
+        plt.savefig(plot_path)
+        print(f"Chart saved as '{plot_path}'")
         # plt.show() # Uncomment if you have a GUI environment
 
     except FileNotFoundError:
