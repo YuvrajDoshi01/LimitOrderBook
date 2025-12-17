@@ -36,6 +36,7 @@ namespace LOB {
 
             while (bookOrder != nullptr && qty > 0) {
                 Quantity tradeQty = std::min(qty, bookOrder->quantity);
+                bestLevel->decreaseVolume(tradeQty);
 
                 // --- EXECUTION (Log trade) ---
                 // PERFORMANCE NOTE: Comment this out when running benchmarks!
@@ -66,15 +67,8 @@ namespace LOB {
 
             // 7. Clean up the Price Level if it's now empty
             if (bestLevel->isEmpty()) {
-                if (incomingOrder->side == Side::Buy) {
-                    // We ate all the sellers at this price
-                    book.asks.erase(bestLevel->getPrice());
-                } else {
-                    // We ate all the buyers at this price
-                    book.bids.erase(bestLevel->getPrice());
-                }
-                // LimitLevels are not pooled in this version, so standard delete is correct
-                delete bestLevel;
+                Side opposite = (incomingOrder->side == Side::Buy) ? Side::Sell : Side::Buy;
+                book.removeLevel(opposite, bestLevel->getPrice());
             }
         }
 

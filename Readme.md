@@ -1,6 +1,6 @@
 # Limit Order Book
 
-![Language](https://img.shields.io/badge/language-C++-00599C.svg)
+![Language](https://img.shields.io/badge/language-C++20-00599C.svg)
 ![Build](https://img.shields.io/badge/build-CMake-brightgreen.svg)
 
 ## Project Description
@@ -10,11 +10,11 @@ This project is a high-performance **Limit Order Book (LOB)** implementation in 
 The Limit Order Book maintains a record of outstanding limit orders and executes trades when matching orders are found. This implementation focuses on **low latency** and **high throughput**, utilizing efficient data structures to manage the order queues and execute trades rapidly.
 
 ### Key Features
-* **Order Matching Engine:** Automatically matches incoming Buy and Sell orders using the Price-Time Priority algorithm.
-* **Order Types:** Supports **Limit Orders** (buy/sell at a specific price) and **Market Orders** (buy/sell immediately at the best available price).
-* **Order Management:** Capabilities to **Add**, **Cancel**, and **Modify** existing orders.
-* **Performance Benchmarking:** Includes a dedicated benchmark suite to measure latency and throughput under high-load scenarios.
-* **Unit Testing:** Comprehensive test suite ensuring the correctness of order matching logic and edge case handling.
+* **Order Matching Engine:** Matches incoming Buy/Sell orders using Price–Time priority.
+* **Low-Latency Path:** Cache-friendly flat structures for price levels, pooled allocations, and minimal branching.
+* **Order Management:** Add and cancel orders with O(1) lookup by ID.
+* **Performance Benchmarking:** Built-in latency benchmark with CSV export and Python analysis.
+* **Unit Testing:** Tests cover core matching and cancellation logic.
 
 ---
 
@@ -22,20 +22,20 @@ The Limit Order Book maintains a record of outstanding limit orders and executes
 
 The project is organized as follows:
 
-* **`include/`**: Header files defining the core data structures (e.g., `Order`, `OrderBook`, `Trade`).
-* **`src/`**: Source code implementing the order book logic and matching engine.
+* **`include/`**: Headers for core data structures (`types/Order.hpp`, `core/OrderBook.hpp`, `core/LimitLevel.hpp`).
+* **`src/`**: Engine implementation (`core/OrderBook.cpp`, `core/MatchingEngine.cpp`, `core/LimitLevel.cpp`).
+* **`benchmark/`**: Latency benchmark (`LatencyBenchmark.cpp`) and optional analysis script (`data_analysis.py`).
 * **`tests/`**: Unit tests to verify functionality.
-* **`benchmark/`**: Performance tests to measure execution speed and latency.
-* **`CMakeLists.txt`**: Configuration file for the CMake build system.
+* **`CMakeLists.txt`**: Project build configuration.
 
 ---
 
 ## Technologies Used
 
-* **Language:** C++ (C++17/20 standard recommended)
+* **Language:** C++20
 * **Build System:** CMake
-* **Testing:** GoogleTest (GTest)
-* **Benchmarking:** Google Benchmark
+* **Testing:** (optional) GoogleTest
+* **Benchmarking:** Custom micro-benchmark with CSV output
 
 ---
 
@@ -59,10 +59,8 @@ Ensure you have the following installed:
     ```
 
 2.  **Create a build directory:**
-    It is best practice to keep build files separate from source code.
     ```bash
-    mkdir build
-    cd build
+    mkdir -p build && cd build
     ```
 
 ---
@@ -71,31 +69,20 @@ Ensure you have the following installed:
 
 This project uses **CMake** for building.
 
-### Step 1: Configure the Project
-Run the cmake command to generate the makefiles.
-```bash
-cmake ..
-```
-*Note: If you want to build in Release mode for maximum performance (recommended for benchmarking), use:*
+### Build (Release recommended)
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --config Release -j 8
 ```
-
-### Step 2: Compile the Code
-Build the project executables.
-```bash
-make
-```
-*(On Windows with Visual Studio, you would open the generated `.sln` file or use `cmake --build .`)*
 
 ---
 
 ## Usage
 
-### Running the Application
-After building, the main executable will be located in the `build` (or `build/bin`) directory.
+### Running the Demo App
+From the `build/` directory:
 ```bash
-./LimitOrderBook
+./LOB
 ```
 
 ### Running Tests
@@ -108,11 +95,18 @@ ctest --output-on-failure
 ```
 
 ### Running Benchmarks
-To see the performance metrics:
+From the `build/` directory, pass the number of orders as an argument (defaults to a large value if omitted):
 ```bash
-cd benchmark
-./limit_order_book_benchmark
+./LOB_Benchmark 1000000
 ```
+This writes `latencies.csv` in the build directory and prints the average latency. The benchmark uses a short warmup and batch timing to avoid 0 ns artifacts and stabilize measurements.
+
+### Analyze Latency CSV (optional)
+From the repo root:
+```bash
+python3 benchmark/data_analysis.py
+```
+This expects `build/latencies.csv` and will print summary stats and save a histogram image to `build/latency_histogram.png`.
 
 ---
 
@@ -122,8 +116,25 @@ The Order Book uses a **Price-Time Priority** matching algorithm:
 1.  **Price Priority:** Buy orders with higher prices and Sell orders with lower prices are prioritized.
 2.  **Time Priority:** If prices are equal, the order that arrived earlier is executed first (FIFO).
 
-**Data Structures:**
-* **Bids (Buy Orders):** Stored in a max-heap or sorted map (descending order) to quickly access the highest buy price.
-* **Asks (Sell Orders):** Stored in a min-heap or sorted map (ascending order) to quickly access the lowest sell price.
-* **Order Vector:** A vector is often used to look up orders by ID O(1) for quick cancellations. 
+**Data Structures (current):**
+- **Price Levels:** Flat, sorted vectors of `(price, level*)` for bids (descending) and asks (ascending), improving cache locality over tree-based maps.
+- **Level Pooling:** `LimitLevel` objects are allocated from a pool to avoid frequent heap allocations and pointer chasing.
+- **Orders:** Intrusive doubly-linked lists per level preserve FIFO; orders come from an object pool.
+- **Lookup:** `std::vector<Order*>` for O(1) cancellation by `OrderId`.
+
+**Matching Mechanics:**
+- `MatchingEngine::match()` walks the best opposing level in FIFO order, updates quantities, and removes empty orders and levels.
+- Partial fills correctly adjust per-level volume via `LimitLevel::decreaseVolume()`.
+- Empty price levels are removed via `OrderBook::removeLevel()` and cached best pointers are refreshed.
+
+**Public API Highlights:**
+- `OrderBook::addOrder(id, side, price, qty)`
+- `OrderBook::cancelOrder(id)`
+- `OrderBook::getVolumeAtPrice(side, price)`
+- `OrderBook::hasOrder(id)`
+
+### Notes on Performance
+- Build with `-DCMAKE_BUILD_TYPE=Release` for realistic numbers.
+- The benchmark uses batched timing to mitigate timer resolution and call overhead.
+- CSV latencies are per-order averages across small batches; use the Python script for percentiles.
 

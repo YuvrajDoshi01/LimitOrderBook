@@ -2,9 +2,10 @@
 
 #include "core/LimitLevel.hpp"
 #include "memory/ObjectPool.hpp"
-#include <map>
-#include <unordered_map>
+#include "memory/LimitLevelPool.hpp"
 #include <vector>
+#include <utility>
+#include <algorithm>
 
 namespace LOB {
 
@@ -31,12 +32,17 @@ namespace LOB {
     private:
         // --- Data Structures ---
         OrderPool orderPool;
-        // 1. The "Index" (Trees)
-        // Bids: Sorted High to Low (std::greater) -> Highest Bid is Best
-        std::map<Price, LimitLevel*, std::greater<Price>> bids;
+        LimitLevelPool levelPool;
 
-        // Asks: Sorted Low to High (std::less, default) -> Lowest Ask is Best
-        std::map<Price, LimitLevel*> asks;
+        using LevelEntry = std::pair<Price, LimitLevel*>;
+        // Bids: sorted descending by price
+        std::vector<LevelEntry> bids;
+        // Asks: sorted ascending by price
+        std::vector<LevelEntry> asks;
+
+        // Cached best levels to avoid repeated begin() calls
+        LimitLevel* bestBid {nullptr};
+        LimitLevel* bestAsk {nullptr};
 
         // 2. The "Lookup" (Hash Map)
         // Maps OrderID -> Order Pointer. 
@@ -45,18 +51,23 @@ namespace LOB {
 
         // --- Internal Helpers ---
         
-        // Matches an incoming order against the opposite book
-        // Returns the remaining quantity of the incoming order
-        Quantity match(Order* order);
-
         // Adds a resting order (that didn't fully match) to the book
         void addRestingOrder(Order* order);
-        
-        // Helper to check if a trade is possible
-        bool canMatch(Side side, Price price) const;
-        
+
         // Helper to get the best price level (Top of Book)
         // returns nullptr if book is empty
         LimitLevel* getBestLevel(Side side) const;
+
+        // Find a level if it exists (nullptr if absent)
+        LimitLevel* findLevel(Side side, Price price) const;
+
+        // Get or create a level, inserting in sorted position
+        LimitLevel* getOrCreateLevel(Side side, Price price);
+
+        // Remove an empty level and update cached best
+        void removeLevel(Side side, Price price);
+
+        // Update cached best pointers after insert/remove
+        void refreshBestPointers();
     };
 }

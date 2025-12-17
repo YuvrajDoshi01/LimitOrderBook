@@ -18,6 +18,9 @@ namespace LOB {
         // Removes an order from the list (Cancellation or Execution)
         void remove(Order* order);
 
+        // Decreases tracked volume when an order is partially filled
+        void decreaseVolume(Quantity qty);
+
         // --- Getters ---
         Price getPrice() const { return price; }
         Quantity getVolume() const { return totalVolume; }

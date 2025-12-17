@@ -1,12 +1,12 @@
 #include "core/OrderBook.hpp"
 #include "core/MatchingEngine.hpp"
 #include "types/Order.hpp"
-#include <iostream> 
+#include <iostream>
 #define endl std::endl
 
 namespace LOB {
 
-    OrderBook::OrderBook(): orderPool(10000000) {
+    OrderBook::OrderBook(): orderPool(10000000), levelPool(1024) {
         // Resize vector to hold 1 Million IDs initially.
         // We fill it with 'nullptr' to indicate empty slots.
         orderLookup.resize(10000000, nullptr);
@@ -58,29 +58,8 @@ namespace LOB {
         // 2. Direct Assignment
         orderLookup[order->id] = order;
 
-        // 3. Tree Logic
-        LimitLevel* level = nullptr;
-        if(order->side == Side::Buy){
-            auto it = bids.find(order->price);
-            if(it != bids.end()){
-                level = it->second;
-            }
-            else{
-                level = new LimitLevel(order->price);
-                bids[order->price] = level;
-            }
-        }
-        else{
-            auto it = asks.find(order->price);
-            if(it != asks.end()){
-                level = it->second;
-            }
-            else{
-                level = new LimitLevel(order->price);
-                asks[order->price] = level;
-            }
-        }
-        
+        // 3. Flat structure logic
+        LimitLevel* level = getOrCreateLevel(order->side, order->price);
         level->append(order);
     }
 
@@ -103,13 +82,7 @@ namespace LOB {
 
         // 4. Tree Cleanup
         if(parentLimit->isEmpty()){
-            if(order->side == Side::Buy){
-                bids.erase(parentLimit->getPrice());
-            }
-            else{
-                asks.erase(parentLimit->getPrice());
-            }
-            delete parentLimit;
+            removeLevel(order->side, parentLimit->getPrice());
         }
 
         // 5. Vector Cleanup (Crucial Change)
@@ -121,15 +94,62 @@ namespace LOB {
         orderPool.deallocate(order);
     }
 
+    Quantity OrderBook::getVolumeAtPrice(Side side, Price price) const {
+        LimitLevel* lvl = findLevel(side, price);
+        return (lvl == nullptr) ? 0 : lvl->getVolume();
+    }
+
+    bool OrderBook::hasOrder(OrderId id) const {
+        return id < orderLookup.size() && orderLookup[id] != nullptr;
+    }
+
     LimitLevel* OrderBook::getBestLevel(Side side) const {
-        if(side == Side::Buy){
-            if(!asks.empty()) return asks.begin()->second;
-            return nullptr;
-        }
-        if(side == Side::Sell){
-            if(!bids.empty()) return bids.begin()->second;
-            return nullptr;
+        return (side == Side::Buy) ? bestAsk : bestBid;
+    }
+
+    LimitLevel* OrderBook::findLevel(Side side, Price price) const {
+        const auto& book = (side == Side::Buy) ? bids : asks;
+        auto comp = (side == Side::Buy)
+            ? [](const LevelEntry& e, Price p){ return e.first > p; }
+            : [](const LevelEntry& e, Price p){ return e.first < p; };
+        auto it = std::lower_bound(book.begin(), book.end(), price, comp);
+        if (it != book.end() && it->first == price) {
+            return it->second;
         }
         return nullptr;
+    }
+
+    LimitLevel* OrderBook::getOrCreateLevel(Side side, Price price) {
+        auto& book = (side == Side::Buy) ? bids : asks;
+        auto comp = (side == Side::Buy)
+            ? [](const LevelEntry& e, Price p){ return e.first > p; }
+            : [](const LevelEntry& e, Price p){ return e.first < p; };
+        auto it = std::lower_bound(book.begin(), book.end(), price, comp);
+        if (it != book.end() && it->first == price) {
+            return it->second;
+        }
+        LimitLevel* level = levelPool.allocate(price);
+        it = book.insert(it, LevelEntry{price, level});
+        (void)it; // suppress unused warning
+        refreshBestPointers();
+        return level;
+    }
+
+    void OrderBook::removeLevel(Side side, Price price) {
+        auto& book = (side == Side::Buy) ? bids : asks;
+        auto comp = (side == Side::Buy)
+            ? [](const LevelEntry& e, Price p){ return e.first > p; }
+            : [](const LevelEntry& e, Price p){ return e.first < p; };
+        auto it = std::lower_bound(book.begin(), book.end(), price, comp);
+        if (it != book.end() && it->first == price) {
+            levelPool.deallocate(it->second);
+            book.erase(it);
+            refreshBestPointers();
+        }
+    }
+
+    void OrderBook::refreshBestPointers() {
+        bestBid = bids.empty() ? nullptr : bids.front().second;
+        bestAsk = asks.empty() ? nullptr : asks.front().second;
     }
 }

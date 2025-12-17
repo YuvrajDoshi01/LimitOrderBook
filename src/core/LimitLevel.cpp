@@ -66,4 +66,12 @@ namespace LOB {
         
         return;
     }
+
+    void LimitLevel::decreaseVolume(Quantity qty) {
+        if (qty >= totalVolume) {
+            totalVolume = 0;
+        } else {
+            totalVolume -= qty;
+        }
+    }
 }
